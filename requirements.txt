@@ -20,5 +20,4 @@ halo==0.0.26
 requests==2.24.0
 gql==0.1.0
 packageurl-python==0.9.1
-# etos-lib==1.2.0
-etos-lib==0.0.post0.dev2+g773b419
+etos-lib==1.0.0

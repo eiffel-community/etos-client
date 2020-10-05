@@ -38,7 +38,7 @@ Examples
 Contribute
 ==========
 
-- Issue Tracker: https://github.com/eiffel-community/etos-client/issues
+- Issue Tracker: https://github.com/eiffel-community/etos/issues
 - Source Code: https://github.com/eiffel-community/etos-client
 
 

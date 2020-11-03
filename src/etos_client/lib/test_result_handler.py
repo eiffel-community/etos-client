@@ -90,8 +90,10 @@ class ETOSTestResultHandler:
     def get_environment_events(self):
         """Get the environment events set for this execution."""
         events = self.events.get("testSuiteStarted", [])
-        events.append(self.events.get("mainSuiteStarted"))
-        ids = [started["meta"]["id"] for started in events]
+        ids = [
+            started["meta"]["id"]
+            for started in events + [self.events.get("mainSuiteStarted")]
+        ]
         ids.append(self.activity_id)
         self.events["environmentDefined"] = list(request_environment(self.etos, ids))
 

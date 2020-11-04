@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.3.0
+-------------
+
+- 64b224e Update etos library to version 1.3.0
+- d5a12e1 Fix a problem where test suite failed did not match started (#11)
+
 Version 1.2.0
 -------------
 

@@ -15,6 +15,7 @@
 # limitations under the License.
 """GraphQL query handler."""
 from .graphql_queries import (
+    ARTIFACTS,
     ACTIVITY_TRIGGERED,
     CONFIDENCE_LEVEL,
     TEST_SUITE_STARTED,
@@ -203,5 +204,23 @@ def request_environment(etos, ids):
                 response, "environmentDefined"
             ):
                 yield environment
+            return None  # StopIteration
+    return None  # StopIteration
+
+
+def request_artifacts(etos, context):
+    """Request artifacts from graphql.
+
+    :param etos: ETOS client query etos.
+    :type etos: :obj:`etos_lib.etos.ETOS`
+    :param context: ID of the activity used in CONTEXT.
+    :type context: str
+    """
+    for response in request(etos, ARTIFACTS % context):
+        if response:
+            for _, artifact in etos.graphql.search_for_nodes(
+                response, "artifactCreated"
+            ):
+                yield artifact
             return None  # StopIteration
     return None  # StopIteration

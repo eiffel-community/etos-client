@@ -154,3 +154,44 @@ ENVIRONMENTS = """
   }
 }
 """
+
+
+ARTIFACTS = """
+{
+  artifactCreated(search: "{'links.type': 'CONTEXT', 'links.target': '%s'}") {
+    edges {
+      node {
+        data {
+          fileInformation {
+            name
+          }
+        }
+        links {
+          ... on Cause {
+            links {
+              ... on TestSuiteStarted {
+                data {
+                  name
+                }
+              }
+            }
+          }
+        }
+        reverse {
+          edges {
+            node {
+              ... on ArtifactPublished {
+                data {
+                  locations {
+                    uri
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"""

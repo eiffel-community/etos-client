@@ -64,6 +64,10 @@ def parse_args(args):
         description="Client for executing test automation suites in ETOS"
     )
     parser.add_argument(
+        "cluster",
+        help="Cluster is the URL to the ETOS API.",
+    )
+    parser.add_argument(
         "-i",
         "--identity",
         help="Artifact created identity purl to execute test suite on.",
@@ -125,11 +129,6 @@ def parse_args(args):
     )
 
     parser.add_argument(
-        "--cluster",
-        default=Debug().etos_api,
-        help="Cluster should be in the form of URL to tester-api.",
-    )
-    parser.add_argument(
         "--version",
         action="version",
         version="etos_client {ver}".format(ver=__version__),
@@ -165,7 +164,7 @@ def check_etos_connectivity(url):
     :type url: str
     """
     try:
-        response = requests.head(url, timeout=5)
+        response = requests.get(url, timeout=5)
         response.raise_for_status()
     except Exception as exception:  # pylint:disable=broad-except
         raise Exception(
@@ -273,7 +272,6 @@ def main(args):
     """
     args = parse_args(args)
     etos = ETOS("ETOS Client", os.getenv("HOSTNAME"), "ETOS Client")
-    os.environ["ETOS_TESTER_API"] = args.cluster
 
     setup_logging(args.loglevel)
     info = generate_spinner(args.no_tty)
@@ -285,11 +283,11 @@ def main(args):
     etos.config.set("dataset", json.loads(args.dataset))
 
     with info(text="Checking connectivity to ETOS", spinner="dots") as spinner:
-        spinner.info("Running in cluster: '{}'".format(etos.debug.etos_api))
+        spinner.info("Running in cluster: '{}'".format(args.cluster))
         spinner.info("Configuration:")
         spinner.info("{}".format(etos.config.config))
         try:
-            check_etos_connectivity(etos.debug.etos_api)
+            check_etos_connectivity(f"{args.cluster}/selftest/ping")
         except Exception as exception:  # pylint:disable=broad-except
             spinner.fail(str(exception))
             sys.exit(1)
@@ -298,7 +296,7 @@ def main(args):
         spinner.succeed("Ready to launch ETOS.")
 
         # Start execution
-        etos_client = ETOSClient(etos)
+        etos_client = ETOSClient(etos, args.cluster)
         spinner.start("Triggering ETOS.")
         success = etos_client.start(spinner)
         if not success:
@@ -307,6 +305,8 @@ def main(args):
             sys.exit(not success)
         spinner.info("Suite ID: {}".format(etos_client.test_suite_id))
         etos.config.set("suite_id", etos_client.test_suite_id)
+        os.environ["ETOS_GRAPHQL_SERVER"] = etos_client.event_repository
+        spinner.info("Event repository: '{}'".format(etos.debug.graphql_server))
 
         # Wait for test results
         test_result_handler = ETOSTestResultHandler(etos)

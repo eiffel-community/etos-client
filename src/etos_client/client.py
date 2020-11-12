@@ -21,14 +21,19 @@ _LOGGER = logging.getLogger(__name__)
 
 class ETOSClient:
     """Client for starting test suites in ETOS."""
+    event_repository = None
+    test_suite_id = None
 
-    def __init__(self, etos):
+    def __init__(self, etos, cluster):
         """Initialize ETOS client.
 
         :param etos: ETOS Library instance.
         :type etos: :obj:`etos_lib.etos.ETOS`
+        :param cluster: ETOS cluster to start tests in.
+        :type cluster: str
         """
         self.etos = etos
+        self.cluster = cluster
         self.test_execution = {}
 
     @property
@@ -55,24 +60,18 @@ class ETOSClient:
         """
         spinner.info(str(self.data))
         generator = self.etos.http.retry(
-            "POST", self.etos.debug.etos_api, timeout=30, json=self.data
+            "POST", f"{self.cluster}/etos", timeout=30, json=self.data
         )
         response = None
         try:
             for response in generator:
                 self.test_execution = response
+                self.test_suite_id = response.get("tercc")
+                self.event_repository = response.get("event_repository")
                 break
         except ConnectionError as exception:
-            spinner.warning(str(exception))
+            spinner.warn(str(exception))
             spinner.fail("Failed to trigger ETOS.")
             return False
         spinner.succeed("ETOS triggered.")
         return True
-
-    @property
-    def test_suite_id(self):
-        """Test suite ID on TERCC."""
-        recipe = self.test_execution.get(
-            "EiffelTestExecutionRecipeCollectionCreatedEvent"
-        )
-        return recipe.get("meta", {}).get("id")

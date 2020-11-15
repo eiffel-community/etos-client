@@ -205,7 +205,7 @@ class ETOSTestResultHandler:
                 return {}
             self.activity_id = activity["meta"]["id"]
 
-        results = {}
+        results = {"activityId": self.activity_id}
 
         started = list(request_test_suite_started(self.etos, self.activity_id))
         if not started:

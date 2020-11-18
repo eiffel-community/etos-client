@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.4.0
+-------------
+
+- 8e7663e Update etos library to version 1.4.0
+- ef8afd8 Make sure etos client can download artifacts from events (#12)
+
 Version 1.3.0
 -------------
 

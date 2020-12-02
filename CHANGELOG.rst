@@ -2,6 +2,13 @@
 Changelog
 =========
 
+Version 1.5.0
+-------------
+
+- 7e0bcea Update etos library to version 1.5.0
+- afefc7a Add a very-verbose input (#14)
+- 056b491 Use the event repository from new ETOS API. (#13)
+
 Version 1.4.0
 -------------
 

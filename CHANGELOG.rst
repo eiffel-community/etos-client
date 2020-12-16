@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.6.0
+-------------
+
+- dcf48dc Update etos library to version 1.6.0
+
 Version 1.5.0
 -------------
 

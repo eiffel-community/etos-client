@@ -22,7 +22,10 @@ import os
 import logging
 import time
 import json
+import warnings
 
+from getpass import getpass
+import keyring
 import requests
 from halo import Halo
 from packageurl import PackageURL
@@ -33,7 +36,8 @@ from etos_client import __version__
 from etos_client.client import ETOSClient
 from etos_client.lib import ETOSTestResultHandler, ETOSLogHandler
 
-_logger = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
+COMPATIBILITY_MODE = False
 
 
 def environ_or_required(key):
@@ -71,13 +75,13 @@ def parse_args(args):
         "-i",
         "--identity",
         help="Artifact created identity purl to execute test suite on.",
-        **environ_or_required("IDENTITY")
+        **environ_or_required("IDENTITY"),
     )
     parser.add_argument(
         "-s",
         "--test-suite",
         help="Test suite execute. Either URL or name.",
-        **environ_or_required("TEST_SUITE")
+        **environ_or_required("TEST_SUITE"),
     )
 
     parser.add_argument(
@@ -166,15 +170,79 @@ def setup_logging(loglevel):
     )
 
 
-def check_etos_connectivity(url):
+def authorization_header():
+    """Create an authorization header from keyring.
+
+    :return: Authorization header.
+    :rtype: dict
+    """
+    token = keyring.get_password("etos_api", "token")
+    return {"Authorization": f"Bearer {token}"}
+
+
+def get_credentials():
+    """Get credentials from user starting client.
+
+    :return: Credentials
+    :rtype: dict
+    """
+    username = os.getenv("USERNAME") or input("Username: ")
+    password = os.getenv("PASSWORD") or getpass("Password: ")
+    return {"username": username, "password": password}
+
+
+def authorize(base_url, error_headers):
+    """Authorize client against cluster.
+
+    :param base_url: URL to the cluster to authorize against.
+    :type base_url: str
+    :param error_headers: Headers for response which cause 401 or 403.
+    :type error_headers: dict
+    """
+    url = f"{base_url}/token"
+    backend = error_headers.get("etos-authorization-backend")
+    if backend in ("Ldap", "Simple"):
+        credentials = get_credentials()
+    else:
+        credentials = {"username": "Anonymous"}
+    try:
+        response = requests.post(url, json=credentials)
+        json_response = response.json()
+        keyring.set_password("etos_api", "token", json_response.get("access_token"))
+    except Exception:  # pylint:disable=broad-except
+        keyring.delete_password("etos_api", "token")
+
+
+def check_etos_connectivity(base_url, retry_unauthorized=True):
     """Check the connection to ETOS.
 
-    :param url: URL to test connection to.
-    :type url: str
+    :param retry_unauthorized: Whether or not to retry on unauthorized response.
+    :type retry_unauthorized: bool
+    :param base_url: URL to the cluster to test connection against.
+    :type base_url: str
     """
+    url = f"{base_url}/selftest/ping"
     try:
-        response = requests.get(url, timeout=5)
+        response = requests.get(url, timeout=5, headers=authorization_header())
         response.raise_for_status()
+    except requests.exceptions.HTTPError as http_error:
+        if retry_unauthorized and http_error.response.status_code in (401, 403):
+            authorize(base_url, http_error.response.headers)
+            check_etos_connectivity(base_url, False)
+        elif http_error.response.status_code == 404:
+            # Backwards compatibility
+            global COMPATIBILITY_MODE  # pylint:disable=global-statement
+            COMPATIBILITY_MODE = True
+            warnings.warn(
+                "You are using an old and insecure version of the ETOS cluster.",
+                DeprecationWarning,
+            )
+            response = requests.head(base_url, timeout=5)
+            response.raise_for_status()
+        else:
+            raise Exception(
+                "Unable to connect to ETOS. Please check your network connection."
+            ) from http_error
     except Exception as exception:  # pylint:disable=broad-except
         raise Exception(
             "Unable to connect to ETOS. Please check your network connection."
@@ -229,7 +297,7 @@ class Printer:
         :param text: Text to print.
         :type text: str
         """
-        _logger.info(text)
+        _LOGGER.info(text)
 
     @staticmethod
     def fail(text):
@@ -238,7 +306,7 @@ class Printer:
         :param text: Text to print.
         :type text: str
         """
-        _logger.error(text)
+        _LOGGER.error(text)
 
     @staticmethod
     def warn(text):
@@ -247,7 +315,7 @@ class Printer:
         :param text: Text to print.
         :type text: str
         """
-        _logger.warning(text)
+        _LOGGER.warning(text)
 
     succeed = info
 
@@ -296,7 +364,8 @@ def main(args):
         spinner.info("Configuration:")
         spinner.info("{}".format(etos.config.config))
         try:
-            check_etos_connectivity(f"{args.cluster}/selftest/ping")
+            check_etos_connectivity(args.cluster)
+            etos.config.set("compatibility_mode", COMPATIBILITY_MODE)
         except Exception as exception:  # pylint:disable=broad-except
             spinner.fail(str(exception))
             sys.exit(1)

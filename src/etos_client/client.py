@@ -15,12 +15,14 @@
 # limitations under the License.
 """ETOS Client module."""
 import logging
+import keyring
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class ETOSClient:
     """Client for starting test suites in ETOS."""
+
     event_repository = None
     test_suite_id = None
 
@@ -35,6 +37,12 @@ class ETOSClient:
         self.etos = etos
         self.cluster = cluster
         self.test_execution = {}
+
+    @property
+    def headers(self):
+        """ETOS request headers."""
+        token = keyring.get_password("etos_api", "token")
+        return {"Authorization": f"Bearer {token}"}
 
     @property
     def data(self):
@@ -58,9 +66,16 @@ class ETOSClient:
         :return: Whether or not suite triggered correctly.
         :rtype: bool
         """
+        if self.etos.config.get("compatibility_mode") is True:
+            url = self.cluster
+            spinner.warn(
+                "DeprecationWarning: You are using an old and insecure version of the ETOS cluster."
+            )
+        else:
+            url = f"{self.cluster}/etos"
         spinner.info(str(self.data))
         generator = self.etos.http.retry(
-            "POST", f"{self.cluster}/etos", timeout=30, json=self.data
+            "POST", url, timeout=30, json=self.data, headers=self.headers
         )
         response = None
         try:

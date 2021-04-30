@@ -1,4 +1,4 @@
-# Copyright 2020 Axis Communications AB.
+# Copyright 2020-2021 Axis Communications AB.
 #
 # For a full list of individual contributors, please see the commit history.
 #
@@ -15,14 +15,19 @@
 # limitations under the License.
 """ETOS Client module."""
 import logging
+from uuid import UUID
+from packageurl import PackageURL
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class ETOSClient:
     """Client for starting test suites in ETOS."""
+
     event_repository = None
     test_suite_id = None
+    artifact_id = None
+    artifact_identity = None
 
     def __init__(self, etos, cluster):
         """Initialize ETOS client.
@@ -36,11 +41,40 @@ class ETOSClient:
         self.cluster = cluster
         self.test_execution = {}
 
+    @staticmethod
+    def is_uuid(string):
+        """Test if string is a valid UUID v4.
+
+        :param string: A string to test.
+        :type string: str
+        :return: Is string a valid UUID.
+        :rtype: bool
+        """
+        try:
+            UUID(string, version=4)
+            return True
+        except ValueError:
+            return False
+
+    @staticmethod
+    def is_packageurl(string):
+        """Test if string is a valid PackageURL.
+
+        :param string: A string to test.
+        :type string: str
+        :return: Is string a valid PackageURL.
+        :rtype: bool
+        """
+        try:
+            PackageURL.from_string(string)
+            return True
+        except ValueError:
+            return False
+
     @property
     def data(self):
         """ETOS request data."""
-        return {
-            "artifact_identity": self.etos.config.get("identity").to_string(),
+        data = {
             "dataset": self.etos.config.get("dataset"),
             "iut_provider": self.etos.config.get("iut_provider"),
             "execution_space_provider": self.etos.config.get(
@@ -49,6 +83,16 @@ class ETOSClient:
             "log_area_provider": self.etos.config.get("log_area_provider"),
             "test_suite_url": self.etos.config.get("test_suite"),
         }
+        identity = self.etos.config.get("identity")
+        if self.is_uuid(identity):
+            data["artifact_id"] = identity
+        elif self.is_packageurl(identity):
+            data["artifact_identity"] = identity
+        else:
+            raise ValueError(
+                "Identity %r is not a valid PackageURL or UUID." % identity
+            )
+        return data
 
     def start(self, spinner):
         """Start ETOS test execution.
@@ -67,6 +111,8 @@ class ETOSClient:
             for response in generator:
                 self.test_execution = response
                 self.test_suite_id = response.get("tercc")
+                self.artifact_id = response.get("artifact_id")
+                self.artifact_identity = response.get("artifact_identity")
                 self.event_repository = response.get("event_repository")
                 break
         except ConnectionError as exception:

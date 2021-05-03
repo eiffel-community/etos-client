@@ -83,14 +83,14 @@ class ETOSClient:
             "log_area_provider": self.etos.config.get("log_area_provider"),
             "test_suite_url": self.etos.config.get("test_suite"),
         }
-        identity = self.etos.config.get("identity")
-        if self.is_uuid(identity):
-            data["artifact_id"] = identity
-        elif self.is_packageurl(identity):
-            data["artifact_identity"] = identity
+        artifact_identifier = self.etos.config.get("artifact_identifier")
+        if self.is_uuid(artifact_identifier):
+            data["artifact_id"] = artifact_identifier
+        elif self.is_packageurl(artifact_identifier):
+            data["artifact_identity"] = artifact_identifier
         else:
             raise ValueError(
-                "Identity %r is not a valid PackageURL or UUID." % identity
+                "Identity %r is not a valid PackageURL or UUID." % artifact_identifier
             )
         return data
 

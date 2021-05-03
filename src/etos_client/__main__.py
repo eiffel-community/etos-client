@@ -285,7 +285,8 @@ def main(args):
 
     for key, value in args._get_kwargs():  # pylint:disable=protected-access
         etos.config.set(key, value)
-    etos.config.set("identity", args.identity)
+
+    etos.config.set("artifact_identifier", args.identity)
     etos.config.set("dataset", json.loads(args.dataset))
 
     with info(text="Checking connectivity to ETOS", spinner="dots") as spinner:

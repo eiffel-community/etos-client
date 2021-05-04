@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2020 Axis Communications AB.
+# Copyright 2020-2021 Axis Communications AB.
 #
 # For a full list of individual contributors, please see the commit history.
 #
@@ -25,9 +25,7 @@ import json
 
 import requests
 from halo import Halo
-from packageurl import PackageURL
 from etos_lib.etos import ETOS
-from etos_lib.lib.debug import Debug
 
 from etos_client import __version__
 from etos_client.client import ETOSClient
@@ -70,14 +68,14 @@ def parse_args(args):
     parser.add_argument(
         "-i",
         "--identity",
-        help="Artifact created identity purl to execute test suite on.",
-        **environ_or_required("IDENTITY")
+        help="Artifact created identity purl or ID to execute test suite on.",
+        **environ_or_required("IDENTITY"),
     )
     parser.add_argument(
         "-s",
         "--test-suite",
         help="Test suite execute. Either URL or name.",
-        **environ_or_required("TEST_SUITE")
+        **environ_or_required("TEST_SUITE"),
     )
 
     parser.add_argument(
@@ -284,11 +282,11 @@ def main(args):
 
     setup_logging(args.loglevel)
     info = generate_spinner(args.no_tty)
-    identity = PackageURL.from_string(args.identity)
 
     for key, value in args._get_kwargs():  # pylint:disable=protected-access
         etos.config.set(key, value)
-    etos.config.set("identity", identity)
+
+    etos.config.set("artifact_identifier", args.identity)
     etos.config.set("dataset", json.loads(args.dataset))
 
     with info(text="Checking connectivity to ETOS", spinner="dots") as spinner:
@@ -312,7 +310,11 @@ def main(args):
             # Unix  : 0 == Success, 1 == Fail
             # Python: 1 == True   , 0 == False
             sys.exit(not success)
+
         spinner.info("Suite ID: {}".format(etos_client.test_suite_id))
+        spinner.info("Artifact ID: {}".format(etos_client.artifact_id))
+        spinner.info("Purl: {}".format(etos_client.artifact_identity))
+
         etos.config.set("suite_id", etos_client.test_suite_id)
         os.environ["ETOS_GRAPHQL_SERVER"] = etos_client.event_repository
         spinner.info("Event repository: '{}'".format(etos.debug.graphql_server))

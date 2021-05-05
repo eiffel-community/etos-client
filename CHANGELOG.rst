@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.14.0
+--------------
+
+- b3dbc80 Update etos library to version 1.14.0
+- d7314c9 Add the ability to provide identity as a UUID (#16)
+
 Version 1.13.0
 --------------
 

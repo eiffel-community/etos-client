@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.20.0
+--------------
+
+- f6d4360 Update etos library to version 1.20.0
+
 Version 1.19.0
 --------------
 

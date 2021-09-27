@@ -46,7 +46,7 @@ ACTIVITY_TRIGGERED = """
 
 ACTIVITY_CANCELED = """
 {
-  activityCanceled(search: "{'links.target': '%s'}") {
+  activityCanceled(search: "{'links.type': 'ACTIVITY_EXECUTION', 'links.target': '%s'}") {
     edges {
       node {
         data {

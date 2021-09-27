@@ -30,7 +30,7 @@ from .graphql_queries import (
 def request(etos, query):
     """Request graphql in a generator.
 
-    :param etos: ETOS client query etos.
+    :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
     :param query: Query to send to graphql.
     :type query: str
@@ -44,7 +44,7 @@ def request(etos, query):
 def request_suite(etos, suite_id):
     """Request a tercc from graphql.
 
-    :param etos: ETOS client query etos.
+    :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
     :param suite_id: ID of execution recipe.
     :type suite_id: str
@@ -67,7 +67,7 @@ def request_suite(etos, suite_id):
 def request_activity(etos, suite_id):
     """Request an activity event from graphql.
 
-    :param etos: ETOS client query etos.
+    :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
     :param suite_id: ID of execution recipe triggering this activity.
     :type suite_id: str
@@ -89,10 +89,10 @@ def request_activity(etos, suite_id):
 def request_activity_canceled(etos, activity_id):
     """Request an activity event from graphql.
 
-    :param etos: ETOS client query etos.
+    :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
-    :param suite_id: ID of execution recipe triggering this activity.
-    :type suite_id: str
+    :param activity_id: ID of the activity beeing canceled.
+    :type activity_id: str
     :return: Response from graphql or None
     :rtype: dict or None
     """
@@ -111,7 +111,7 @@ def request_activity_canceled(etos, activity_id):
 def request_test_suite_started(etos, activity_id):
     """Request test suite started from graphql.
 
-    :param etos: ETOS client query etos.
+    :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
     :param activity_id: ID of activity in which the test suites started
     :type activity_id: str
@@ -131,7 +131,7 @@ def request_test_suite_started(etos, activity_id):
 def request_test_suite_finished(etos, test_suite_ids):
     """Request test suite finished from graphql.
 
-    :param etos: ETOS client query etos.
+    :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
     :param test_suite_ids: list of test suite started IDs of which finished to search for.
     :type test_suite_ids: list
@@ -160,7 +160,7 @@ def request_test_suite_finished(etos, test_suite_ids):
 def request_confidence_level(etos, test_suite_ids):
     """Request confidence levels from graphql.
 
-    :param etos: ETOS client query etos.
+    :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
     :param test_suite_ids: list of test suite started IDs of which confidences to search for.
     :type test_suite_ids: list
@@ -188,7 +188,7 @@ def request_confidence_level(etos, test_suite_ids):
 def request_announcements(etos, ids):
     """Request announcements from graphql.
 
-    :param etos: ETOS client query etos.
+    :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
     :param ids: list of IDs of which announcements to search for.
     :type ids: list
@@ -211,7 +211,7 @@ def request_announcements(etos, ids):
 def request_environment(etos, ids):
     """Request environments from graphql.
 
-    :param etos: ETOS client query etos.
+    :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
     :param ids: list of IDs of which environments to search for.
     :type ids: list
@@ -234,7 +234,7 @@ def request_environment(etos, ids):
 def request_artifacts(etos, context):
     """Request artifacts from graphql.
 
-    :param etos: ETOS client query etos.
+    :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
     :param context: ID of the activity used in CONTEXT.
     :type context: str

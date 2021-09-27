@@ -19,6 +19,7 @@ import time
 import logging
 from .graphql import (
     request_activity,
+    request_activity_canceled,
     request_confidence_level,
     request_test_suite_finished,
     request_test_suite_started,
@@ -282,6 +283,9 @@ class ETOSTestResultHandler:
             self.latest_announcement(spinner)
             time.sleep(10)
             self.events = self.get_events(self.etos.config.get("suite_id"))
+            canceled = request_activity_canceled(self.etos, self.activity_id)
+            if canceled:
+                return False, canceled["data"]["reason"]
             if not self.has_started:
                 continue
             spinner.text = self.spinner_text

@@ -44,6 +44,20 @@ ACTIVITY_TRIGGERED = """
 }
 """
 
+ACTIVITY_CANCELED = """
+{
+  activityCanceled(search: "{'links.type': 'ACTIVITY_EXECUTION', 'links.target': '%s'}") {
+    edges {
+      node {
+        data {
+          reason
+        }
+      }
+    }
+  }
+}
+"""
+
 
 TEST_SUITE_STARTED = """
 {

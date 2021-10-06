@@ -2,6 +2,12 @@
 Changelog
 =========
 
+Version 1.23.0
+--------------
+
+- b0ef20f Update etos library to version 1.23.0
+- 53e313e Add proper exit on activityCanceled event from ETOS (#17)
+
 Version 1.22.0
 --------------
 

@@ -20,7 +20,6 @@ import logging
 from .graphql import (
     request_activity,
     request_activity_canceled,
-    request_confidence_level,
     request_test_suite_finished,
     request_test_suite_started,
     request_suite,
@@ -234,21 +233,6 @@ class ETOSTestResultHandler:
             main_suite
             for main_suite in finished
             if main_suite_link in main_suite["links"]
-        ]
-
-        main_suite_link = {"links": {"meta": {"id": main_suite["meta"]["id"]}}}
-        confidence = list(request_confidence_level(self.etos, started_ids))
-        if not confidence:
-            return results
-        results["confidenceLevelModified"] = [
-            sub_confidence
-            for sub_confidence in confidence
-            if main_suite_link not in sub_confidence["links"]
-        ]
-        results["mainConfidenceLevelModified"] = [
-            main_confidence
-            for main_confidence in confidence
-            if main_suite_link in main_confidence["links"]
         ]
         return results
 

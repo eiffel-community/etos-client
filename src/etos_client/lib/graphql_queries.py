@@ -108,35 +108,6 @@ TEST_SUITE_FINISHED = """
 }
 """
 
-CONFIDENCE_LEVEL = """
-{
-  confidenceLevelModified(search: "%s") {
-    edges {
-      node {
-        data {
-          name
-          value
-        }
-        meta {
-          id
-        }
-        links {
-          ... on Cause {
-            links {
-              ... on TestSuiteStarted {
-                meta {
-                  id
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-"""
-
 
 ANNOUNCEMENTS = """
 {

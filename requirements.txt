@@ -15,9 +15,6 @@
 # numpy==1.13.3
 # scipy==1.0
 #
-graphql-core==2.2.1
 halo==0.0.26
-requests==2.24.0
-gql==0.1.0
 packageurl-python==0.9.1
 etos_lib==1.24.0

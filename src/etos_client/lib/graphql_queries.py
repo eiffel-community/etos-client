@@ -1,4 +1,4 @@
-# Copyright 2020 Axis Communications AB.
+# Copyright 2020-2021 Axis Communications AB.
 #
 # For a full list of individual contributors, please see the commit history.
 #
@@ -98,35 +98,6 @@ TEST_SUITE_FINISHED = """
             testSuiteStarted {
               meta {
                 id
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-"""
-
-CONFIDENCE_LEVEL = """
-{
-  confidenceLevelModified(search: "%s") {
-    edges {
-      node {
-        data {
-          name
-          value
-        }
-        meta {
-          id
-        }
-        links {
-          ... on Cause {
-            links {
-              ... on TestSuiteStarted {
-                meta {
-                  id
-                }
               }
             }
           }

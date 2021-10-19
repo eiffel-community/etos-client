@@ -131,7 +131,7 @@ class ETOSLogHandler:
         while os.path.exists(os.path.join(directory, download_name)):
             index += 1
             download_name = f"{index}_{name}"
-        spinner.text = "Downloading {}".format(download_name)
+        spinner.text = f"Downloading {download_name}"
         generator = self.etos.http.wait_for_request(uri, as_json=False, stream=True)
         try:
             for response in generator:
@@ -141,7 +141,7 @@ class ETOSLogHandler:
                 break
             return True
         except (ConnectionError, HTTPError) as error:
-            spinner.warn("Failed in downloading '{}'.".format(download_name))
+            spinner.warn(f"Failed in downloading {download_name!r}.")
             spinner.warn(str(error))
             return False
 
@@ -169,11 +169,13 @@ class ETOSLogHandler:
                 break
             spinner.text = "Downloading IUT Data"
             try:
-                filename = "IUT_{}.json".format(index)
-                with open(os.path.join(self.artifact_dir, filename), "w+") as report:
+                filename = f"IUT_{index}.json"
+                with open(
+                    os.path.join(self.artifact_dir, filename), "w+", encoding="utf-8"
+                ) as report:
                     json.dump(iut, report)
             except Exception as error:  # pylint:disable=broad-except
-                spinner.warn("Failed in downloading '{}'.".format(filename))
+                spinner.warn(f"Failed in downloading {filename!r}.")
                 spinner.warn(str(error))
                 incomplete = True
             nbr_of_logs_downloaded += 1
@@ -181,9 +183,9 @@ class ETOSLogHandler:
         shutil.make_archive(
             os.path.join(self.artifact_dir, "reports"), "zip", self.report_dir
         )
-        spinner.info("Downloaded {} logs".format(nbr_of_logs_downloaded))
-        spinner.info("Reports: {}".format(self.report_dir))
-        spinner.info("Artifacs: {}".format(self.artifact_dir))
+        spinner.info(f"Downloaded {nbr_of_logs_downloaded} logs")
+        spinner.info(f"Reports: {self.report_dir}")
+        spinner.info(f"Artifacs: {self.artifact_dir}")
         if incomplete:
             spinner.fail("Logs failed downloading.")
             return False

@@ -129,7 +129,7 @@ def parse_args(args):
     parser.add_argument(
         "--version",
         action="version",
-        version="etos_client {ver}".format(ver=__version__),
+        version=f"etos_client {__version__}",
     )
     parser.add_argument(
         "-v",
@@ -290,9 +290,9 @@ def main(args):
     etos.config.set("dataset", json.loads(args.dataset))
 
     with info(text="Checking connectivity to ETOS", spinner="dots") as spinner:
-        spinner.info("Running in cluster: '{}'".format(args.cluster))
+        spinner.info(f"Running in cluster: {args.cluster!r}")
         spinner.info("Configuration:")
-        spinner.info("{}".format(etos.config.config))
+        spinner.info(f"{etos.config.config}")
         try:
             check_etos_connectivity(f"{args.cluster}/selftest/ping")
         except Exception as exception:  # pylint:disable=broad-except
@@ -311,13 +311,13 @@ def main(args):
             # Python: 1 == True   , 0 == False
             sys.exit(not success)
 
-        spinner.info("Suite ID: {}".format(etos_client.test_suite_id))
-        spinner.info("Artifact ID: {}".format(etos_client.artifact_id))
-        spinner.info("Purl: {}".format(etos_client.artifact_identity))
+        spinner.info(f"Suite ID: {etos_client.test_suite_id}")
+        spinner.info(f"Artifact ID: {etos_client.artifact_id}")
+        spinner.info(f"Purl: {etos_client.artifact_identity}")
 
         etos.config.set("suite_id", etos_client.test_suite_id)
         os.environ["ETOS_GRAPHQL_SERVER"] = etos_client.event_repository
-        spinner.info("Event repository: '{}'".format(etos.debug.graphql_server))
+        spinner.info(f"Event repository: {etos.debug.graphql_server!r}")
 
         # Wait for test results
         test_result_handler = ETOSTestResultHandler(etos)

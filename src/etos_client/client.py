@@ -90,7 +90,7 @@ class ETOSClient:
             data["artifact_identity"] = artifact_identifier
         else:
             raise ValueError(
-                "Identity %r is not a valid PackageURL or UUID." % artifact_identifier
+                f"Identity {artifact_identifier!r} is not a valid PackageURL or UUID."
             )
         return data
 

@@ -1,4 +1,4 @@
-# Copyright 2020 Axis Communications AB.
+# Copyright 2020-2021 Axis Communications AB.
 #
 # For a full list of individual contributors, please see the commit history.
 #
@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ETOS Client test result handler."""
-import os
 import time
 import logging
 from .graphql import (
@@ -122,9 +121,8 @@ class ETOSTestResultHandler:
                 if verdict != "PASSED":
                     nbr_of_fail += 1
         if nbr_of_fail > 0:
-            message = "{}/{} test suites failed.".format(
-                nbr_of_fail, len(self.events.get("testSuiteStarted"))
-            )
+            nbr_of_suites = len(self.events.get("testSuiteStarted"))
+            message = f"{nbr_of_fail}/{nbr_of_suites} test suites failed."
             result = False
         else:
             message = "Test suite finished successfully."
@@ -143,33 +141,8 @@ class ETOSTestResultHandler:
             if announcement not in self.announcements:
                 self.announcements.append(announcement)
                 data = self.announcements[-1].get("data")
-                spinner.info("{}: {}".format(data.get("heading"), data.get("body")))
+                spinner.info(f"{data.get('heading')}: {data.get('body')}")
                 spinner.start("Waiting for ETOS.")
-
-    def suite_runner_health_check(self):
-        """Check if suite runner is currently"""
-        url = "{}/status".format(os.getenv("SUITE_STARTER_API"))
-        response_generator = self.etos.utils.wait_for_request(
-            url, timeout=5, params={"suite_id": self.etos.config.get("suite_id")}
-        )
-        failures = []
-        try:
-            for response in response_generator:
-                for result in response.get("result", []):
-                    if (
-                        result.get("status") == "finished"
-                        and result.get("result") == "failed"
-                    ):
-                        failures.append(result)
-                break
-        finally:
-            try:
-                response_generator.close()
-            except:  # pylint:disable=bare-except
-                pass
-        if failures:
-            return False
-        return True
 
     @staticmethod
     def split_main_and_sub_suites_started(started):
@@ -247,7 +220,7 @@ class ETOSTestResultHandler:
         while time.time() < timeout:
             tercc = request_suite(self.etos, self.etos.config.get("suite_id"))
             if tercc:
-                spinner.info("Test suite: {}".format(tercc["data"]["batchesUri"]))
+                spinner.info(f"Test suite: {tercc['data']['batchesUri']}")
                 spinner.start()
                 return
             time.sleep(1)

@@ -140,8 +140,7 @@ def request_test_suite_finished(etos, test_suite_ids):
     or_query = "{'$or': ["
     or_query += ", ".join(
         [
-            "{'links.type': 'TEST_SUITE_EXECUTION', 'links.target': '%s'}"
-            % test_suite_id
+            f"{{'links.type': 'TEST_SUITE_EXECUTION', 'links.target': '{test_suite_id}'}}"
             for test_suite_id in test_suite_ids
         ]
     )
@@ -167,7 +166,7 @@ def request_announcements(etos, ids):
     :rtype: iterator
     """
     or_query = "{'$or': ["
-    or_query += ", ".join(["{'links.target': '%s'}" % _id for _id in ids])
+    or_query += ", ".join([f"{{'links.target': '{_id}'}}" for _id in ids])
     or_query += "]}"
     for response in request(etos, ANNOUNCEMENTS % or_query):
         if response:
@@ -190,7 +189,7 @@ def request_environment(etos, ids):
     :rtype: iterator
     """
     or_query = "{'$or': ["
-    or_query += ", ".join(["{'links.target': '%s'}" % _id for _id in ids])
+    or_query += ", ".join([f"{{'links.target': '{_id}'}}" for _id in ids])
     or_query += "]}"
     for response in request(etos, ENVIRONMENTS % or_query):
         if response:

@@ -325,6 +325,7 @@ def main(args):
         success, results = test_result_handler.wait_for_test_suite_finished(spinner)
         if not success:
             spinner.fail(results)
+            sys.exit(not success)
         else:
             spinner.succeed(results)
 

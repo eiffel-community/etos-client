@@ -322,10 +322,11 @@ def main(args):
         # Wait for test results
         test_result_handler = ETOSTestResultHandler(etos)
         spinner.start("Waiting for ETOS.")
-        success, results = test_result_handler.wait_for_test_suite_finished(spinner)
+        success, results, canceled = test_result_handler.wait_for_test_suite_finished(spinner)
         if not success:
             spinner.fail(results)
-            sys.exit(not success)
+            if canceled:
+                sys.exit(canceled)
         else:
             spinner.succeed(results)
 

@@ -231,7 +231,8 @@ class ETOSTestResultHandler:
 
         :param spinner: Spinner text item.
         :type spinner: :obj:`Spinner`
-        :return: Whether it was a successful execution or not, the test results and if the execution was canceled.
+        :return: Whether it was a successful execution or not, the test results
+                 and if the execution was canceled.
         :rtype: tuple
         """
         self.print_suite(spinner)
@@ -242,7 +243,14 @@ class ETOSTestResultHandler:
             self.events = self.get_events(self.etos.config.get("suite_id"))
             canceled = request_activity_canceled(self.etos, self.activity_id)
             if canceled:
-                return False, f"Test Suite was canceled, with the following reason: {canceled['data']['reason']}", canceled
+                return (
+                    False,
+                    (
+                        "Test Suite was canceled, with the following reason: "
+                        f"{canceled['data']['reason']}"
+                    ),
+                    canceled,
+                )
             if not self.has_started:
                 continue
             spinner.text = self.spinner_text

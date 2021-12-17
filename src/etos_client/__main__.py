@@ -271,7 +271,7 @@ def generate_spinner(no_tty):
     return Halo
 
 
-def main(args):
+def main(args):  # pylint:disable=too-many-statements
     """Entry point allowing external calls.
 
     Args:
@@ -322,7 +322,9 @@ def main(args):
         # Wait for test results
         test_result_handler = ETOSTestResultHandler(etos)
         spinner.start("Waiting for ETOS.")
-        success, results, canceled = test_result_handler.wait_for_test_suite_finished(spinner)
+        success, results, canceled = test_result_handler.wait_for_test_suite_finished(
+            spinner
+        )
         if not success:
             spinner.fail(results)
             if canceled:

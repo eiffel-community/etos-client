@@ -255,5 +255,5 @@ class ETOSTestResultHandler:
                 continue
             spinner.text = self.spinner_text
             if self.has_finished:
-                return self.test_result(), canceled
+                return *self.test_result(), canceled
         return False, "Test suites did not finish", canceled

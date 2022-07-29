@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Axis Communications AB.
+# Copyright 2020-2022 Axis Communications AB.
 #
 # For a full list of individual contributors, please see the commit history.
 #
@@ -61,14 +61,24 @@ ACTIVITY_CANCELED = """
 
 TEST_SUITE_STARTED = """
 {
-  testSuiteStarted(search:"{'links.type': 'CONTEXT', 'links.target': '%s'}") {
+  testSuiteStarted(search:"{'links.type': 'CAUSE', 'links.target': '%s'}") {
     edges {
       node {
-        data {
-          testSuiteCategories {
-            type
-          }
+        meta {
+          id
         }
+      }
+    }
+  }
+}
+"""
+
+
+MAIN_TEST_SUITES_STARTED = """
+{
+  testSuiteStarted(search:"{'links.type': 'CONTEXT', 'links.target': '%s', 'data.categories': {'$ne': 'Sub suite'}}") {
+    edges {
+      node {
         meta {
           id
         }
@@ -81,7 +91,7 @@ TEST_SUITE_STARTED = """
 
 TEST_SUITE_FINISHED = """
 {
-  testSuiteFinished(search: "%s") {
+  testSuiteFinished(search: "{'links.type': 'TEST_SUITE_EXECUTION', 'links.target': '%s'}" last: 1) {
     edges {
       node {
         data {
@@ -91,15 +101,6 @@ TEST_SUITE_FINISHED = """
           }
           testSuiteOutcome {
             verdict
-          }
-        }
-        links {
-          ... on TestSuiteExecution {
-            testSuiteStarted {
-              meta {
-                id
-              }
-            }
           }
         }
       }

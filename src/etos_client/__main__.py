@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2020-2021 Axis Communications AB.
+# Copyright 2020-2022 Axis Communications AB.
 #
 # For a full list of individual contributors, please see the commit history.
 #
@@ -119,7 +119,7 @@ def parse_args(args):
     )
     parser.add_argument(
         "--dataset",
-        default="{}",
+        action="append",
         help=(
             "Additional dataset information to the environment provider. "
             "Check with your provider which information can be supplied."
@@ -287,7 +287,7 @@ def main(args):  # pylint:disable=too-many-statements
         etos.config.set(key, value)
 
     etos.config.set("artifact_identifier", args.identity)
-    etos.config.set("dataset", json.loads(args.dataset))
+    etos.config.set("dataset", [json.loads(dataset) for dataset in args.dataset] or {})
 
     with info(text="Checking connectivity to ETOS", spinner="dots") as spinner:
         spinner.info(f"Running in cluster: {args.cluster!r}")

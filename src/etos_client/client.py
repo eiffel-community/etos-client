@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Axis Communications AB.
+# Copyright 2020-2022 Axis Communications AB.
 #
 # For a full list of individual contributors, please see the commit history.
 #
@@ -74,8 +74,11 @@ class ETOSClient:
     @property
     def data(self):
         """ETOS request data."""
+        dataset = self.etos.config.get("dataset")
+        if len(dataset) == 1:
+            dataset = dataset[0]
         data = {
-            "dataset": self.etos.config.get("dataset"),
+            "dataset": dataset,
             "iut_provider": self.etos.config.get("iut_provider"),
             "execution_space_provider": self.etos.config.get(
                 "execution_space_provider"

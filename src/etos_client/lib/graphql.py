@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Axis Communications AB.
+# Copyright 2020-2022 Axis Communications AB.
 #
 # For a full list of individual contributors, please see the commit history.
 #
@@ -18,6 +18,7 @@ from .graphql_queries import (
     ARTIFACTS,
     ACTIVITY_TRIGGERED,
     ACTIVITY_CANCELED,
+    MAIN_TEST_SUITES_STARTED,
     TEST_SUITE_STARTED,
     TEST_SUITE_FINISHED,
     TEST_SUITE,
@@ -127,32 +128,46 @@ def request_test_suite_started(etos, activity_id):
     return None  # StopIteration
 
 
-def request_test_suite_finished(etos, test_suite_ids):
+def request_main_test_suites_started(etos, activity_id):
+    """Request test suite started from graphql.
+
+    :param etos: Etos Library instance for communicating with ETOS.
+    :type etos: :obj:`etos_lib.etos.ETOS`
+    :param activity_id: ID of activity in which the test suites started
+    :type activity_id: str
+    :return: Iterator of test suite started graphql responses.
+    :rtype: iterator
+    """
+    for response in request(etos, MAIN_TEST_SUITES_STARTED % activity_id):
+        if response:
+            for _, test_suite_started in etos.graphql.search_for_nodes(
+                response, "testSuiteStarted"
+            ):
+                yield test_suite_started
+            return None  # StopIteration
+    return None  # StopIteration
+
+
+def request_test_suite_finished(etos, test_suite_id):
     """Request test suite finished from graphql.
 
     :param etos: Etos Library instance for communicating with ETOS.
     :type etos: :obj:`etos_lib.etos.ETOS`
-    :param test_suite_ids: list of test suite started IDs of which finished to search for.
-    :type test_suite_ids: list
-    :return: Iterator of test suite finished graphql responses.
-    :rtype: iterator
+    :param test_suite_id: Test suite started ID of which finished to search for.
+    :type test_suite_id: list
+    :return: Test suite finished graphql response.
+    :rtype: dict
     """
-    or_query = "{'$or': ["
-    or_query += ", ".join(
-        [
-            f"{{'links.type': 'TEST_SUITE_EXECUTION', 'links.target': '{test_suite_id}'}}"
-            for test_suite_id in test_suite_ids
-        ]
-    )
-    or_query += "]}"
-    for response in request(etos, TEST_SUITE_FINISHED % or_query):
+    for response in request(etos, TEST_SUITE_FINISHED % test_suite_id):
         if response:
-            for _, test_suite_finished in etos.graphql.search_for_nodes(
-                response, "testSuiteFinished"
-            ):
-                yield test_suite_finished
-            return None  # StopIteration
-    return None  # StopIteration
+            try:
+                _, test_suite_finished = next(
+                    etos.graphql.search_for_nodes(response, "testSuiteFinished")
+                )
+            except StopIteration:
+                return None
+            return test_suite_finished
+    return None
 
 
 def request_announcements(etos, ids):

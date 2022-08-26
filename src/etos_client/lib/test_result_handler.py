@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Axis Communications AB.
+# Copyright 2020-2022 Axis Communications AB.
 #
 # For a full list of individual contributors, please see the commit history.
 #
@@ -19,6 +19,7 @@ import logging
 from .graphql import (
     request_activity,
     request_activity_canceled,
+    request_main_test_suites_started,
     request_test_suite_finished,
     request_test_suite_started,
     request_suite,
@@ -29,10 +30,13 @@ from .graphql import (
 _LOGGER = logging.getLogger(__name__)
 
 
+# https://github.com/eiffel-community/etos/issues/127 pylint: disable=too-many-instance-attributes
 class ETOSTestResultHandler:
     """Handle ETOS test results."""
 
-    activity_id = None
+    __activity_id = None
+    has_started = False
+    has_finished = False
 
     def __init__(self, etos):
         """Initialize ETOS Client test result handler.
@@ -41,26 +45,30 @@ class ETOSTestResultHandler:
         :type etos: :obj:`etos_lib.etos.ETOS`
         """
         self.etos = etos
+        self.suite_id = self.etos.config.get("suite_id")
+
+        self.test_suite_started = {}
+        self.test_suites_finished = []
+        self.main_suite_started = {}
+        self.main_suites_finished = []
+
         self.events = {}
         self.announcements = []
 
     @property
-    def has_started(self):
-        """Whether or not test suites have started.
-
-        :return: Whether or not test suites have started.
-        :rtype bool
-        """
-        return len(self.events.get("testSuiteStarted", [])) >= 1
+    def activity_id(self):
+        """Get the activity ID from event repository."""
+        if self.__activity_id is None:
+            activity = request_activity(self.etos, self.suite_id)
+            if activity is not None:
+                self.__activity_id = activity["meta"]["id"]
+        return self.__activity_id
 
     @property
-    def has_finished(self):
-        """Whether or not test suites have finished.
-
-        :return: Whether or not test suites have finished.
-        :rtype bool
-        """
-        return bool(self.events.get("mainSuiteFinished", False))
+    def main_test_suites_started(self):
+        """Get main test suites started from event repository."""
+        if self.activity_id is not None:
+            yield from request_main_test_suites_started(self.etos, self.activity_id)
 
     @property
     def spinner_text(self):
@@ -80,7 +88,7 @@ class ETOSTestResultHandler:
             announcement = ""
 
         params = {
-            "started_length": len(self.events.get("testSuiteStarted", [])),
+            "started_length": len(self.test_suite_started.keys()),
             "finished_length": len(self.events.get("testSuiteFinished", [])),
             "announcement": announcement,
         }
@@ -88,11 +96,9 @@ class ETOSTestResultHandler:
 
     def get_environment_events(self):
         """Get the environment events set for this execution."""
-        events = self.events.get("testSuiteStarted", [])
-        ids = [
-            started["meta"]["id"]
-            for started in events + [self.events.get("mainSuiteStarted")]
-        ]
+        ids = list(self.test_suite_started.keys()) + list(
+            self.main_suite_started.keys()
+        )
         ids.append(self.activity_id)
         self.events["environmentDefined"] = list(request_environment(self.etos, ids))
 
@@ -103,14 +109,17 @@ class ETOSTestResultHandler:
         :rtype: tuple
         """
         nbr_of_fail = 0
-        if not self.events.get("testSuiteStarted"):
+        if not self.has_started:
             return False, "Test suite did not start."
         self.get_environment_events()
 
-        main_suite_finished = self.events.get("mainSuiteFinished", [{}])[0]
-        data = main_suite_finished.get("data", {})
-        outcome = data.get("testSuiteOutcome", {})
-        verdict = outcome.get("verdict")
+        verdict = "PASSED"
+        for main_suite_finished in self.events.get("mainSuiteFinished", [{}]):
+            data = main_suite_finished.get("data", {})
+            outcome = data.get("testSuiteOutcome", {})
+            if outcome.get("verdict") != "PASSED":
+                verdict = outcome.get("verdict")
+
         if verdict == "PASSED":
             result = True
         else:
@@ -121,7 +130,7 @@ class ETOSTestResultHandler:
                 if verdict != "PASSED":
                     nbr_of_fail += 1
         if nbr_of_fail > 0:
-            nbr_of_suites = len(self.events.get("testSuiteStarted"))
+            nbr_of_suites = len(self.test_suite_started.keys())
             message = f"{nbr_of_fail}/{nbr_of_suites} test suites failed."
             result = False
         else:
@@ -144,70 +153,59 @@ class ETOSTestResultHandler:
                 spinner.info(f"{data.get('heading')}: {data.get('body')}")
                 spinner.start("Waiting for ETOS.")
 
-    @staticmethod
-    def split_main_and_sub_suites_started(started):
-        """Split test suite started into main suite and sub suites.
+    def finished(self, test_suite_started_id):
+        """Return the test suite finished event for a test suite started.
 
-        :param started: Test suites that have started in a specified activity.
-        :type started: list
-        :return: Main suite and sub suites started.
-        :rtype: tuple
+        :param test_suite_started_id: Test suite to check finished for.
+        :type test_suite_started_id: dict
         """
-        sub_suite_started = []
-        main_suite = None
-        for test_suite_started in started:
-            for category in test_suite_started["data"]["testSuiteCategories"]:
-                if "Sub suite" in category.get("type"):
-                    sub_suite_started.append(test_suite_started)
-                    break
-            else:
-                main_suite = test_suite_started
-        return main_suite, sub_suite_started
+        return request_test_suite_finished(self.etos, test_suite_started_id)
 
-    def get_events(self, suite_id):
-        """Get events from an activity started from suite id.
+    def collect_sub_suites(self, main_test_suite_id):
+        """Collect sub suites for a main test suite started.
 
-        :param suite_id: ID of test execution recipe that triggered this activity.
-        :type suite_id: str
-        :return: Dictionary of all events generated for this suite.
-        :rtype: dict
+        :param main_test_suite_id: The main test suite to look for sub suites for.
+        :type main_test_suite_id: str
+        """
+        for sub_suite_started in request_test_suite_started(
+            self.etos, main_test_suite_id
+        ):
+            time.sleep(1)
+            event_id = sub_suite_started["meta"]["id"]
+            self.test_suite_started.setdefault(event_id, {"finished": False})
+            if self.test_suite_started[event_id].get("finished"):
+                continue
+            finished = self.finished(event_id)
+            if finished is not None:
+                self.test_suite_started[event_id]["finished"] = finished is not None
+                yield finished
+
+    def get_events(self):
+        """Get events for this ETOS execution.
+
+        :return: List of test suite finished.
+        :rtype: list
         """
         if self.activity_id is None:
-            activity = request_activity(self.etos, suite_id)
-            if activity is None:
-                return {}
-            self.activity_id = activity["meta"]["id"]
-
-        results = {"activityId": self.activity_id}
-
-        started = list(request_test_suite_started(self.etos, self.activity_id))
-        if not started:
             return {}
-        main_suite, sub_suite_started = self.split_main_and_sub_suites_started(started)
-        results["testSuiteStarted"] = sub_suite_started
-        results["mainSuiteStarted"] = main_suite
+        finished = True
+        for main_suite in self.main_test_suites_started:
+            main_suite_id = main_suite["meta"]["id"]
 
-        started_ids = [
-            test_suite_started["meta"]["id"] for test_suite_started in started
-        ]
-        main_suite_link = {
-            "testSuiteStarted": {"meta": {"id": main_suite["meta"]["id"]}}
-        }
+            self.has_started = True
+            main_suite_finished = self.finished(main_suite_id)
+            if main_suite_finished in self.main_suites_finished:
+                continue
+            finished = False
 
-        finished = list(request_test_suite_finished(self.etos, started_ids))
-        if not finished:
-            return results
-        results["testSuiteFinished"] = [
-            sub_finished
-            for sub_finished in finished
-            if main_suite_link not in sub_finished["links"]
-        ]
-        results["mainSuiteFinished"] = [
-            main_suite
-            for main_suite in finished
-            if main_suite_link in main_suite["links"]
-        ]
-        return results
+            for sub_suite_finished in self.collect_sub_suites(main_suite_id):
+                self.test_suites_finished.append(sub_suite_finished)
+
+            if main_suite_finished:
+                self.main_suites_finished.append(main_suite_finished)
+
+        self.has_finished = finished
+        return self.test_suites_finished, self.main_suites_finished
 
     def print_suite(self, spinner):
         """Print test suite batchesUri.
@@ -240,7 +238,12 @@ class ETOSTestResultHandler:
         while time.time() < timeout:
             self.latest_announcement(spinner)
             time.sleep(10)
-            self.events = self.get_events(self.etos.config.get("suite_id"))
+            test_suites, main_suites = self.get_events()
+            self.events = {
+                "activityId": self.activity_id,
+                "testSuiteFinished": test_suites,
+                "mainSuiteFinished": main_suites,
+            }
             canceled = request_activity_canceled(self.etos, self.activity_id)
             if canceled:
                 return (

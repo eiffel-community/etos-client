@@ -7,6 +7,7 @@ ETOS Client
 
 ETOS (Eiffel Test Orchestration System) Client
 
+**Deprecated!** This project has been deprecated and the code has been moved to https://github.com/eiffel-community/etos 
 
 Description
 ===========
